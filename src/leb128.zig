@@ -16,6 +16,18 @@ pub fn decodeLEB128(data: []u8) usize {
     return decoded_number;
 }
 
+pub fn decodeArrayByLEB128(data: []u8, pos: usize) usize {
+    var tmp = [_]u8{0} ** 4;
+    for (data[pos..], 0..) |val, j| {
+        tmp[j] = val;
+        if (val < 128) {
+            break;
+        }
+    }
+
+    return decodeLEB128(&tmp);
+}
+
 test "decoding by LEB128" {
     // 0x07以降はデコードされない
     var target = [_]u8{ 0xea, 0x09, 0x07, 0x69 };

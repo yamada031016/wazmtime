@@ -1,0 +1,5 @@
+build.zig.zon
+zig-out
+zig-out/*
+zig-cache
+zig-cache/*
