@@ -1,4 +1,5 @@
 const std = @import("std");
+const leb128 = @import("leb128.zig");
 
 pub fn readFileAll(path: []const u8, buf: []u8) !usize {
     const file = try std.fs.cwd().openFile(path, .{});
@@ -19,4 +20,16 @@ pub fn isWasmFile(file_path: []const u8) bool {
         }
     }
     return false;
+}
+
+pub fn getValCounts(data: []u8, pos: usize) usize {
+    var tmp = [_]u8{0} ** 4;
+    for (data[pos..], 0..) |val, j| {
+        tmp[j] = val;
+        if (val < 128) {
+            break;
+        }
+    }
+
+    return leb128.decodeLEB128(&tmp);
 }

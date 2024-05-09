@@ -51,7 +51,7 @@ pub fn analyzeCodeSection(data: []u8, size: usize) !void {
     try bw.flush();
 }
 
-fn getCodeSize(data: []u8, size: usize, pos: usize) wasm.WasmSectionSize {
+pub fn getCodeSize(data: []u8, size: usize, pos: usize) wasm.WasmSectionSize {
     var code_section = wasm.WasmSectionSize{ .size = 0, .byte_width = 0 };
     if (pos + 3 > size) {
         @panic("out of binary data.");

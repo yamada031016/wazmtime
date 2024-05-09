@@ -4,11 +4,16 @@ const utils = @import("utils.zig");
 const readFileAll = @import("utils.zig").readFileAll;
 const wasm = @import("wasm.zig");
 const code = @import("code.zig");
+const Runtime = @import("runtime.zig").Runtime;
 
 pub fn main() !void {
     const alloc = std.heap.page_allocator;
     const args = try std.process.argsAlloc(alloc);
     defer std.process.argsFree(alloc, args);
+
+    const stdout_file = std.io.getStdOut().writer();
+    var bw = std.io.bufferedWriter(stdout_file);
+    const stdout = bw.writer();
 
     if (args.len < 2) {
         std.debug.print("Usage: {s} [**.wasm]\n", .{args[0]});
@@ -23,8 +28,13 @@ pub fn main() !void {
 
     var buf: [5096]u8 = undefined;
     if (readFileAll(file_path, &buf)) |size| {
+        _ = stdout;
         // try wasm.analyzeWasm(&buf, file_path);
-        try code.analyzeCodeSection(&buf, size);
+        // try code.analyzeCodeSection(&buf, size);
+        var runtime: Runtime = Runtime.init(&buf);
+        var Wasm = wasm.Wasm.init(size, &runtime);
+
+        try Wasm.analyzeSection(.Code);
     } else |err| {
         std.debug.print("{s}", .{@errorName(err)});
     }

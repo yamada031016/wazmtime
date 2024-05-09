@@ -3,6 +3,7 @@ pub const Instr = enum(u32) {
     Loop = 0x03,
     If = 0x04,
     IfElse = 0x05,
+    End = 0x0B,
     Br = 0x0C,
     BrIf = 0x0D,
     BrTable = 0x0E,

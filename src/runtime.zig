@@ -1,45 +1,39 @@
 const Stack = @import("stack.zig").Stack;
 const Instr = @import("instr.zig").Instr;
+const std = @import("std");
 
 pub const Runtime = struct {
     const Self = @This();
-    const Instruction = ?*const fn (*Self) void;
-    var instructions: [256]Instruction = [_]Instruction{null} ** 256;
-    var instr_pos = 0;
-    var nest_block_cnt = 0;
 
-    var stack: *Stack = undefined;
-    var args_width = 0;
+    var nest_block_cnt: usize = 0;
+    var args_width: usize = 0;
 
     data: []u8,
+    stack: *Stack = undefined,
 
     pub fn init(data: []u8) Self {
-        var runtime = Self{ .data = data };
-        stack = Stack.init();
-        runtime.setInstructions();
-
-        return runtime;
+        return Self{ .data = data, .stack = Stack.init() };
     }
 
-    fn execute(self: *Runtime, end_pos: usize) void {
-        for (self.data[instr_pos .. end_pos + 1], instr_pos..end_pos + 1) |instr, i| {
+    pub fn execute(self: *Runtime, first_pos: usize) void {
+        for (self.data[first_pos..], first_pos..) |instr_code, i| {
             if (args_width > 0) {
                 // 引数はスキップする
                 args_width -= 1;
                 continue;
             }
-
-            switch (instr) {
-                .Block => self.block(i),
-                .I64Const => self.i64_const(i),
-                .I64Add => self.i64_add(),
-                .Drop => self.drop(),
-                else => unreachable,
+            switch (instr_code) {
+                @intFromEnum(Instr.Block) => self.block(i),
+                @intFromEnum(Instr.I64Const) => self.i64_const(i),
+                @intFromEnum(Instr.I64Add) => self.i64_add(),
+                @intFromEnum(Instr.Drop) => self.drop(),
+                @intFromEnum(Instr.End) => return,
+                else => {},
             }
         }
     }
 
-    fn block(self: *Stack, pos: usize) void {
+    fn block(self: *Self, pos: usize) void {
         nest_block_cnt += 1;
         switch (self.data[pos + 1]) {
             0x40 => args_width = 1,
@@ -62,20 +56,22 @@ pub const Runtime = struct {
         }
     }
 
-    fn i64_const(self: *Stack, pos: usize) void {
+    fn i64_const(self: *Self, pos: usize) void {
         args_width = calcArgsWidth(self.data, pos + 1, 8);
-        self.push(self.data[pos + 1]);
+        self.stack.push(self.data[pos + 1]);
+        std.debug.print("push value: {}\n", .{self.data[pos + 1]});
     }
 
-    fn i64_add(self: *Stack) void {
-        args_width = 1; //valtype
-        const a = self.pop();
-        const b = self.pop();
-        self.push(a + b);
+    fn i64_add(self: *Self) void {
+        const a = self.stack.pop();
+        const b = self.stack.pop();
+        self.stack.push(a + b);
+        std.debug.print("a: {}\tb: {}\n", .{ a, b });
     }
 
-    fn drop(self: *Stack) void {
-        self.pop();
+    fn drop(self: *Self) void {
+        // _ = self.stack.pop();
+        std.debug.print("pop value: {}\n", .{self.stack.pop()});
     }
 
     fn calcArgsWidth(data: []u8, pos: usize, comptime byte_width: usize) usize {
