@@ -11,20 +11,20 @@ pub const Runtime = struct {
     data: []u8,
     stack: *Stack = undefined,
 
-    pub fn init(data: []u8) Self {
-        return Self{ .data = data, .stack = Stack.init() };
+    pub fn init(data: []u8) *Self {
+        return @constCast(&Self{ .data = data, .stack = Stack.init() });
     }
 
-    pub fn execute(self: *Runtime, first_pos: usize) void {
-        for (self.data[first_pos..], first_pos..) |instr_code, i| {
+    pub fn execute(self: *Runtime, target: []u8) void {
+        for (target, 0..) |instr_code, i| {
             if (args_width > 0) {
                 // 引数はスキップする
                 args_width -= 1;
                 continue;
             }
             switch (instr_code) {
-                @intFromEnum(Instr.Block) => self.block(i),
-                @intFromEnum(Instr.I64Const) => self.i64_const(i),
+                @intFromEnum(Instr.Block) => self.block(target, i),
+                @intFromEnum(Instr.I64Const) => self.i64_const(target, i),
                 @intFromEnum(Instr.I64Add) => self.i64_add(),
                 @intFromEnum(Instr.Drop) => self.drop(),
                 @intFromEnum(Instr.End) => return,
@@ -33,22 +33,23 @@ pub const Runtime = struct {
         }
     }
 
-    fn block(self: *Self, pos: usize) void {
+    fn block(self: *Self, target: []u8, pos: usize) void {
+        _ = self;
         nest_block_cnt += 1;
-        switch (self.data[pos + 1]) {
+        switch (target[pos + 1]) {
             0x40 => args_width = 1,
             0x7E, 0x7D, 0x7C, 0x7B, 0x70, 0x6F => args_width = 1, //valtype
             else => {
                 //s33
-                const n = self.data[pos + 1 + calcArgsWidth(self.data, pos + 1, 4)];
+                const n = target[pos + 1 + calcArgsWidth(target, pos + 1, 4)];
                 if (n < (2 << 6)) {
-                    args_width = calcArgsWidth(self.data, pos + 1, 4);
+                    args_width = calcArgsWidth(target, pos + 1, 4);
                 } else if (2 << 6 <= n and n < 2 << 7) {
-                    args_width = calcArgsWidth(self.data, pos + 1, 4);
+                    args_width = calcArgsWidth(target, pos + 1, 4);
                 } else if (n >= 2 << 7) {
-                    args_width = calcArgsWidth(self.data, pos + 1, 4);
+                    args_width = calcArgsWidth(target, pos + 1, 4);
                 }
-                args_width = calcArgsWidth(self.data, pos + 1, 4);
+                args_width = calcArgsWidth(target, pos + 1, 4);
                 if (args_width > @ceil(33.0 / 7.0)) {
                     args_width = @ceil(33.0 / 7.0);
                 }
@@ -56,10 +57,10 @@ pub const Runtime = struct {
         }
     }
 
-    fn i64_const(self: *Self, pos: usize) void {
-        args_width = calcArgsWidth(self.data, pos + 1, 8);
-        self.stack.push(self.data[pos + 1]);
-        std.debug.print("push value: {}\n", .{self.data[pos + 1]});
+    fn i64_const(self: *Self, target: []u8, pos: usize) void {
+        args_width = calcArgsWidth(target, pos + 1, 8);
+        self.stack.push(target[pos + 1]);
+        std.debug.print("push value: {}\n", .{target[pos + 1]});
     }
 
     fn i64_add(self: *Self) void {

@@ -10,8 +10,12 @@ pub const Wasm = struct {
     size: usize,
     pos: usize = 0,
 
-    pub fn init(size: usize, runtime: *Runtime) *Wasm {
-        return @constCast(&Wasm{ .data = runtime.data, .size = size, .runtime = runtime });
+    pub fn init(data: []u8, size: usize) *Wasm {
+        return @constCast(&Wasm{
+            .data = data,
+            .size = size,
+            .runtime = Runtime.init(data),
+        });
     }
 
     fn proceedToSection(self: *Wasm, sec: WasmSection) void {
@@ -30,6 +34,7 @@ pub const Wasm = struct {
             }
         }
     }
+
     fn proceedToCodeFunc(self: *Wasm) void {
         const local_var_cnt = utils.getValCounts(self.data, self.pos);
         const local_var_width = calcWidth: {
@@ -95,7 +100,7 @@ pub const Wasm = struct {
                 self.pos += 1; // valtype分進める
             }
 
-            self.runtime.execute(self.pos);
+            self.runtime.execute(self.data[self.pos..]);
             self.pos += code.size + code.byte_width;
         }
     }
