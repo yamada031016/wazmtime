@@ -23,8 +23,8 @@ pub const Runtime = struct {
                 continue;
             }
             switch (instr_code) {
-                @intFromEnum(Instr.Block) => self.block(target, i),
-                @intFromEnum(Instr.I64Const) => self.i64_const(target, i),
+                @intFromEnum(Instr.Block) => self.block(target, i + 1),
+                @intFromEnum(Instr.I64Const) => self.i64_const(target, i + 1),
                 @intFromEnum(Instr.I64Add) => self.i64_add(),
                 @intFromEnum(Instr.Drop) => self.drop(),
                 @intFromEnum(Instr.End) => return,
@@ -36,20 +36,20 @@ pub const Runtime = struct {
     fn block(self: *Self, target: []u8, pos: usize) void {
         _ = self;
         nest_block_cnt += 1;
-        switch (target[pos + 1]) {
+        switch (target[pos]) {
             0x40 => args_width = 1,
             0x7E, 0x7D, 0x7C, 0x7B, 0x70, 0x6F => args_width = 1, //valtype
             else => {
                 //s33
-                const n = target[pos + 1 + calcArgsWidth(target, pos + 1, 4)];
+                const n = target[pos + calcArgsWidth(target, pos, 4)];
                 if (n < (2 << 6)) {
-                    args_width = calcArgsWidth(target, pos + 1, 4);
+                    args_width = calcArgsWidth(target, pos, 4);
                 } else if (2 << 6 <= n and n < 2 << 7) {
-                    args_width = calcArgsWidth(target, pos + 1, 4);
+                    args_width = calcArgsWidth(target, pos, 4);
                 } else if (n >= 2 << 7) {
-                    args_width = calcArgsWidth(target, pos + 1, 4);
+                    args_width = calcArgsWidth(target, pos, 4);
                 }
-                args_width = calcArgsWidth(target, pos + 1, 4);
+                args_width = calcArgsWidth(target, pos, 4);
                 if (args_width > @ceil(33.0 / 7.0)) {
                     args_width = @ceil(33.0 / 7.0);
                 }
@@ -58,9 +58,9 @@ pub const Runtime = struct {
     }
 
     fn i64_const(self: *Self, target: []u8, pos: usize) void {
-        args_width = calcArgsWidth(target, pos + 1, 8);
-        self.stack.push(target[pos + 1]);
-        std.debug.print("push value: {}\n", .{target[pos + 1]});
+        args_width = calcArgsWidth(target, pos, 8);
+        self.stack.push(target[pos]);
+        std.debug.print("push value: {}\n", .{target[pos]});
     }
 
     fn i64_add(self: *Self) void {
