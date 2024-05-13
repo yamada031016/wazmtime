@@ -100,7 +100,7 @@ pub const Wasm = struct {
                 self.pos += 1; // valtype分進める
             }
 
-            self.runtime.execute(self.data[self.pos..]);
+            try self.runtime.execute(self.data[self.pos..]);
             self.pos += code.size + code.byte_width;
         }
     }
@@ -116,7 +116,7 @@ pub const Wasm = struct {
 
             self.proceedToCodeFunc();
 
-            self.runtime.execute(self.pos, first_pos + code.byte_width + code.size - 1);
+            try self.runtime.execute(self.pos, first_pos + code.byte_width + code.size - 1);
             self.pos = first_pos + code.size + code.byte_width;
             first_pos = self.pos;
         }
@@ -217,22 +217,6 @@ pub const WasmSectionSize = struct {
     size: usize,
     byte_width: usize,
 };
-
-// leb128でエンコードされたバイト列の幅を求める
-fn calcArgsWidth(data: []u8, pos: usize, comptime byte_width: usize) usize {
-    var tmp = [_]u8{0} ** byte_width;
-    var width: usize = 0;
-    for (data[pos .. pos + byte_width], 0..byte_width) |val, j| {
-        if (val < 128) {
-            tmp[j] = val;
-            width = j + 1;
-            break;
-        }
-        tmp[j] = val;
-        width = j + 1;
-    }
-    return width;
-}
 
 // idで指定されたセクションのサイズを取得
 // wasm binaryではidの次の数値がサイズを表している. 1-4bytes幅で可変長

@@ -16,6 +16,36 @@ pub fn decodeLEB128(data: []u8) usize {
     return decoded_number;
 }
 
+pub fn decodesLEB128(data: []u8) isize {
+    var num: isize = undefined;
+    var decoded_number: isize = 0;
+    var top_digit: u6 = 0;
+    for (data, 0..) |value, i| {
+        num = value & 0b0111_1111; // 値の下位7bit
+        decoded_number |= num << @intCast(i * 7); // 128倍して加える
+        top_digit += 1;
+
+        if (value >> 7 == 0) {
+            // 上位1bitが0
+            if (decoded_number >> top_digit * 6 == 1) {
+                decoded_number = switch (top_digit) {
+                    1 => @as(i8, @truncate(decoded_number | 1 << 7)),
+                    2 => @as(i16, @truncate(decoded_number | 1 << 14)),
+                    3 => @as(i24, @truncate(decoded_number | 1 << 21)),
+                    4 => @as(i32, @truncate(decoded_number | 1 << 28)),
+                    5 => @as(i40, @truncate(decoded_number | 1 << 35)),
+                    6 => @as(i48, @truncate(decoded_number | 1 << 42)),
+                    7 => @as(i56, @truncate(decoded_number | 1 << 49)),
+                    8 => @as(i64, @truncate(decoded_number | 1 << 56)),
+                    else => unreachable,
+                };
+            }
+            break;
+        }
+    }
+    return decoded_number;
+}
+
 pub fn decodeArrayByLEB128(data: []u8, pos: usize) usize {
     var tmp = [_]u8{0} ** 4;
     for (data[pos..], 0..) |val, j| {

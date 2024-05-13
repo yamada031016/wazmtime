@@ -11,17 +11,18 @@ pub fn main() !void {
 
     if (args.len < 2) {
         std.debug.print("Usage: {s} [**.wasm]\n", .{args[0]});
+        std.os.linux.exit(1);
     }
     const file_path = args[1];
 
     if (!utils.isWasmFile(file_path)) {
         std.debug.print("wrong file format: {s}\n", .{std.fs.path.extension(file_path)});
+        std.os.linux.exit(1);
     }
 
     var buf: [4096]u8 = undefined;
     if (utils.readFileAll(file_path, &buf)) |size| {
         var Wasm = wasm.Wasm.init(&buf, size);
-
         try Wasm.analyzeSection(.Code);
     } else |err| {
         std.debug.print("{s}", .{@errorName(err)});

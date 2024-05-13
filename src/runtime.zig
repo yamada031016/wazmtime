@@ -15,19 +15,31 @@ pub const Runtime = struct {
         return @constCast(&Self{ .data = data, .stack = Stack.init() });
     }
 
-    pub fn execute(self: *Runtime, target: []u8) void {
+    pub fn execute(self: *Runtime, target: []u8) !void {
         for (target, 0..) |instr_code, i| {
             if (args_width > 0) {
                 // 引数はスキップする
                 args_width -= 1;
                 continue;
             }
-            switch (instr_code) {
-                @intFromEnum(Instr.Block) => self.block(target, i + 1),
-                @intFromEnum(Instr.I64Const) => self.i64_const(target, i + 1),
-                @intFromEnum(Instr.I64Add) => self.i64_add(),
-                @intFromEnum(Instr.Drop) => self.drop(),
-                @intFromEnum(Instr.End) => return,
+            std.debug.print("instr:{x}\n", .{instr_code});
+            const instr = @as(Instr, @enumFromInt(instr_code));
+            switch (instr) {
+                .Unreachable => unreachable,
+                .Block => self.block(target, i + 1),
+                .I64Const => self.def_const(i64, target, i + 1),
+                .I64Add => self.add(i64),
+                .F64Const => self.def_const(f64, target, i + 1),
+                .F64Add => self.add(f64),
+                .F64Mul => self.mul(f64),
+                .Drop => self.drop(),
+                .I64Sub => self.sub(i64),
+                .I64Mul => self.mul(i64),
+                .I64DivS => try self.divS(i64),
+                .I64DivU => try self.divU(i64),
+                .I64RemS => try self.remS(i64),
+                .I64RemU => try self.remU(i64),
+                .End => return,
                 else => {},
             }
         }
@@ -57,22 +69,82 @@ pub const Runtime = struct {
         }
     }
 
-    fn i64_const(self: *Self, target: []u8, pos: usize) void {
-        args_width = calcArgsWidth(target, pos, 8);
-        self.stack.push(target[pos]);
-        std.debug.print("push value: {}\n", .{target[pos]});
+    fn def_const(self: *Self, comptime T: type, target: []u8, pos: usize) void {
+        const num = proc: {
+            switch (T) {
+                f64, f32 => {
+                    args_width = 8;
+                    var flt: u64 = 0;
+                    for (0..8) |i| {
+                        flt |= @as(u64, @intCast(target[pos + (7 - i)])) << @as(u6, @truncate(((7 - i) * 8)));
+                    }
+                    break :proc @as(T, @bitCast(flt));
+                },
+                else => {
+                    args_width = calcArgsWidth(target, pos, 8);
+                    break :proc @import("leb128.zig").decodesLEB128(target[pos..]);
+                },
+            }
+        };
+        self.stack.push(T, num);
+        std.debug.print("push value: {}\n", .{num});
     }
 
-    fn i64_add(self: *Self) void {
-        const a = self.stack.pop();
-        const b = self.stack.pop();
-        self.stack.push(a + b);
-        std.debug.print("a: {}\tb: {}\n", .{ a, b });
+    fn add(self: *Self, comptime T: type) void {
+        const a = @as(T, @bitCast(self.stack.pop(T)));
+        const b = @as(T, @bitCast(self.stack.pop(T)));
+        self.stack.push(T, b + a);
+        std.debug.print("a: {}\tb: {}\n", .{ b, a });
+    }
+
+    fn sub(self: *Self, comptime T: type) void {
+        const a = @as(T, @bitCast(self.stack.pop(T)));
+        const b = @as(T, @bitCast(self.stack.pop(T)));
+        self.stack.push(T, b - a);
+        std.debug.print("a: {}\tb: {}\n", .{ b, a });
+    }
+
+    fn mul(self: *Self, comptime T: type) void {
+        const a = @as(T, @bitCast(self.stack.pop(T)));
+        const b = @as(T, @bitCast(self.stack.pop(T)));
+        self.stack.push(T, b * a);
+        std.debug.print("a: {}\tb: {}\n", .{ b, a });
+    }
+
+    fn divS(self: *Self, comptime T: type) !void {
+        const denomitor = @as(T, @bitCast(self.stack.pop(T)));
+        const numerator = @as(T, @bitCast(self.stack.pop(T)));
+        const res = try std.math.divTrunc(isize, numerator, denomitor);
+        self.stack.push(T, res);
+        std.debug.print("a: {}\tb: {}\n", .{ numerator, denomitor });
+    }
+
+    fn divU(self: *Self, comptime T: type) !void {
+        const denomitor = @as(u64, @bitCast(self.stack.pop(T)));
+        const numerator = @as(u64, @bitCast(self.stack.pop(T)));
+        const res = try std.math.divTrunc(u64, numerator, denomitor);
+        self.stack.push(u64, @abs(res));
+        std.debug.print("a: {}\tb: {}\n", .{ numerator, denomitor });
+    }
+
+    fn remS(self: *Self, comptime T: type) !void {
+        const denomitor = @as(T, @bitCast(self.stack.pop(T)));
+        const numerator = @as(T, @bitCast(self.stack.pop(T)));
+        const res = try std.math.rem(i64, numerator, denomitor);
+        self.stack.push(T, res);
+        std.debug.print("a: {}\tb: {}\n", .{ numerator, denomitor });
+    }
+
+    fn remU(self: *Self, comptime T: type) !void {
+        const denomitor = @as(u64, @bitCast(self.stack.pop(T)));
+        const numerator = @as(u64, @bitCast(self.stack.pop(T)));
+        const res = try std.math.mod(u64, numerator, denomitor);
+        self.stack.push(u64, res);
+        std.debug.print("a: {}\tb: {}\n", .{ numerator, denomitor });
     }
 
     fn drop(self: *Self) void {
-        // _ = self.stack.pop();
-        std.debug.print("pop value: {}\n", .{self.stack.pop()});
+        self.stack.pop(void);
     }
 
     fn calcArgsWidth(data: []u8, pos: usize, comptime byte_width: usize) usize {

@@ -1,4 +1,5 @@
 pub const Instr = enum(u32) {
+    Unreachable = 0x00,
     Block = 0x02,
     Loop = 0x03,
     If = 0x04,
@@ -54,6 +55,14 @@ pub const Instr = enum(u32) {
     F32Const = 0x43,
     F64Const = 0x44,
     I64Add = 0x7C,
+    I64Sub = 0x7D,
+    I64Mul = 0x7E,
+    I64DivS = 0x7F,
+    I64DivU = 0x80,
+    I64RemS = 0x81,
+    I64RemU = 0x82,
+    F64Add = 0xA0,
+    F64Mul = 0xA2,
 };
 
 pub const FcInstr = enum(u32) {
