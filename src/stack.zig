@@ -4,14 +4,14 @@ const CurrentTopStack = enum {
     f64,
     f32,
     i64,
-    u64,
+    i32,
 };
 
 pub const Stack = struct {
-    const f64stack = @constCast(&(_Stack(f64)));
-    const f32stack = @constCast(&(_Stack(f32)));
-    const i64stack = @constCast(&(_Stack(i64)));
-    const u64stack = @constCast(&(_Stack(u64)));
+    const f64stack = @constCast(&(GeneralStack(f64)));
+    const f32stack = @constCast(&(GeneralStack(f32)));
+    const i64stack = @constCast(&(GeneralStack(i64)));
+    const i32stack = @constCast(&(GeneralStack(i32)));
     var top: CurrentTopStack = undefined;
 
     pub fn init() *Stack {
@@ -35,8 +35,8 @@ pub const Stack = struct {
                 i64stack.push(value);
                 top = .i64;
             },
-            u64 => {
-                u64stack.push(value);
+            i32 => {
+                i32stack.push(value);
                 top = .u64;
             },
             else => unreachable,
@@ -49,13 +49,13 @@ pub const Stack = struct {
             f64 => f64stack.pop(),
             f32 => f32stack.pop(),
             i64 => i64stack.pop(),
-            u64 => u64stack.pop(),
+            u64 => i32stack.pop(),
             void => {
                 switch (top) {
                     .f64 => @import("std").debug.print("pop value: {}\n", .{f64stack.pop()}),
                     .f32 => @import("std").debug.print("pop value: {}\n", .{f32stack.pop()}),
                     .i64 => @import("std").debug.print("pop value: {}\n", .{i64stack.pop()}),
-                    .u64 => @import("std").debug.print("pop value: {}\n", .{u64stack.pop()}),
+                    .i32 => @import("std").debug.print("pop value: {}\n", .{i32stack.pop()}),
                 }
                 return;
             },
@@ -65,7 +65,7 @@ pub const Stack = struct {
     }
 };
 
-fn _Stack(comptime T: type) type {
+fn GeneralStack(comptime T: type) type {
     return struct {
         const Self = @This();
         var stack: [STACK_SIZE]T = undefined;

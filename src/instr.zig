@@ -62,7 +62,12 @@ pub const Instr = enum(u32) {
     I64RemS = 0x81,
     I64RemU = 0x82,
     F64Add = 0xA0,
+    // F64Sub = 0x7D,
     F64Mul = 0xA2,
+    // F64DivS = 0x7F,
+    // F64DivU = 0x80,
+    // F64RemS = 0x81,
+    // F64RemU = 0x82,
 };
 
 pub const FcInstr = enum(u32) {

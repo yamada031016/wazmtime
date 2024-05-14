@@ -22,8 +22,8 @@ pub const Runtime = struct {
                 args_width -= 1;
                 continue;
             }
-            std.debug.print("instr:{x}\n", .{instr_code});
             const instr = @as(Instr, @enumFromInt(instr_code));
+            std.debug.print("{any}\n", .{instr});
             switch (instr) {
                 .Unreachable => unreachable,
                 .Block => self.block(target, i + 1),
@@ -120,10 +120,10 @@ pub const Runtime = struct {
     }
 
     fn divU(self: *Self, comptime T: type) !void {
-        const denomitor = @as(u64, @bitCast(self.stack.pop(T)));
-        const numerator = @as(u64, @bitCast(self.stack.pop(T)));
+        const denomitor = @as(if (T == i64) u64 else u32, @bitCast(self.stack.pop(T)));
+        const numerator = @as(if (T == i64) u64 else u32, @bitCast(self.stack.pop(T)));
         const res = try std.math.divTrunc(u64, numerator, denomitor);
-        self.stack.push(u64, @abs(res));
+        self.stack.push(T, @intCast(res));
         std.debug.print("a: {}\tb: {}\n", .{ numerator, denomitor });
     }
 
@@ -136,10 +136,10 @@ pub const Runtime = struct {
     }
 
     fn remU(self: *Self, comptime T: type) !void {
-        const denomitor = @as(u64, @bitCast(self.stack.pop(T)));
-        const numerator = @as(u64, @bitCast(self.stack.pop(T)));
+        const denomitor = @as(if (T == i64) u64 else u32, @bitCast(self.stack.pop(T)));
+        const numerator = @as(if (T == i64) u64 else u32, @bitCast(self.stack.pop(T)));
         const res = try std.math.mod(u64, numerator, denomitor);
-        self.stack.push(u64, res);
+        self.stack.push(T, @intCast(res));
         std.debug.print("a: {}\tb: {}\n", .{ numerator, denomitor });
     }
 
