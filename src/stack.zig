@@ -37,7 +37,7 @@ pub const Stack = struct {
             },
             i32 => {
                 i32stack.push(value);
-                top = .u64;
+                top = .i32;
             },
             else => unreachable,
         }

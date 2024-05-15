@@ -27,18 +27,38 @@ pub const Runtime = struct {
             switch (instr) {
                 .Unreachable => unreachable,
                 .Block => self.block(target, i + 1),
+                .I32Const => self.def_const(f32, target, i + 1),
                 .I64Const => self.def_const(i64, target, i + 1),
-                .I64Add => self.add(i64),
+                .F32Const => self.def_const(f32, target, i + 1),
                 .F64Const => self.def_const(f64, target, i + 1),
-                .F64Add => self.add(f64),
-                .F64Mul => self.mul(f64),
-                .Drop => self.drop(),
+
+                .I64Add => self.add(i64),
                 .I64Sub => self.sub(i64),
                 .I64Mul => self.mul(i64),
                 .I64DivS => try self.divS(i64),
                 .I64DivU => try self.divU(i64),
                 .I64RemS => try self.remS(i64),
                 .I64RemU => try self.remU(i64),
+
+                .I32Add => self.add(i32),
+                .I32Sub => self.sub(i32),
+                .I32Mul => self.mul(i32),
+                .I32DivS => try self.divS(i32),
+                .I32DivU => try self.divU(i32),
+                .I32RemS => try self.remS(i32),
+                .I32RemU => try self.remU(i32),
+
+                .F32Add => self.add(f32),
+                .F32Sub => self.sub(f32),
+                .F32Mul => self.mul(f32),
+                .F32Div => try self.divS(f32),
+
+                .F64Add => self.add(f64),
+                .F64Mul => self.mul(f64),
+                .F64Sub => self.sub(f64),
+                .F64Div => try self.divS(f64),
+
+                .Drop => self.drop(),
                 .End => return,
                 else => {},
             }
@@ -72,7 +92,15 @@ pub const Runtime = struct {
     fn def_const(self: *Self, comptime T: type, target: []u8, pos: usize) void {
         const num = proc: {
             switch (T) {
-                f64, f32 => {
+                f32 => {
+                    args_width = 4;
+                    var flt: u32 = 0;
+                    for (0..4) |i| {
+                        flt |= @as(u32, @intCast(target[pos + (3 - i)])) << @as(u3, @truncate(((3 - i) * 8)));
+                    }
+                    break :proc @as(T, @bitCast(flt));
+                },
+                f64 => {
                     args_width = 8;
                     var flt: u64 = 0;
                     for (0..8) |i| {
@@ -112,9 +140,9 @@ pub const Runtime = struct {
     }
 
     fn divS(self: *Self, comptime T: type) !void {
-        const denomitor = @as(T, @bitCast(self.stack.pop(T)));
-        const numerator = @as(T, @bitCast(self.stack.pop(T)));
-        const res = try std.math.divTrunc(isize, numerator, denomitor);
+        const denomitor = self.stack.pop(T);
+        const numerator = self.stack.pop(T);
+        const res = try std.math.divTrunc(T, numerator, denomitor);
         self.stack.push(T, res);
         std.debug.print("a: {}\tb: {}\n", .{ numerator, denomitor });
     }
@@ -130,8 +158,8 @@ pub const Runtime = struct {
     fn remS(self: *Self, comptime T: type) !void {
         const denomitor = @as(T, @bitCast(self.stack.pop(T)));
         const numerator = @as(T, @bitCast(self.stack.pop(T)));
-        const res = try std.math.rem(i64, numerator, denomitor);
-        self.stack.push(T, res);
+        const res = try std.math.rem(T, numerator, denomitor);
+        self.stack.push(T, @intCast(res));
         std.debug.print("a: {}\tb: {}\n", .{ numerator, denomitor });
     }
 
