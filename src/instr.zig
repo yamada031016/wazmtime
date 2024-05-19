@@ -1,3 +1,4 @@
+//! Wasmの命令についてまとめたファイル
 pub const Instr = enum(u32) {
     Unreachable = 0x00,
     Block = 0x02,

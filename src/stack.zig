@@ -1,3 +1,4 @@
+//! コード実行に使用するスタックの定義
 const STACK_SIZE = 1024;
 
 const CurrentTopStack = enum {
@@ -7,6 +8,8 @@ const CurrentTopStack = enum {
     i32,
 };
 
+// 4つの数値型のスタックを持ち、これらを操作するインターフェイスを提供する
+// pop,pushするときは対象の型を必要とする
 pub const Stack = struct {
     const f64stack = @constCast(&(GeneralStack(f64)));
     const f32stack = @constCast(&(GeneralStack(f32)));
@@ -51,6 +54,8 @@ pub const Stack = struct {
             i64 => i64stack.pop(),
             u64 => i32stack.pop(),
             void => {
+                // drop()命令等どのような型の値をpopさせるかわからないときはVoidを指定する
+                // drop()命令は取り出す値を積んだ直後に呼ばれると想定しているため,最も新しく積まれた値を返す
                 switch (top) {
                     .f64 => @import("std").debug.print("pop value: {}\n", .{f64stack.pop()}),
                     .f32 => @import("std").debug.print("pop value: {}\n", .{f32stack.pop()}),

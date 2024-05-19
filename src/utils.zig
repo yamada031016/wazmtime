@@ -1,3 +1,4 @@
+//! 便利な関数たち
 const std = @import("std");
 const leb128 = @import("leb128.zig");
 
@@ -22,6 +23,7 @@ pub fn isWasmFile(file_path: []const u8) bool {
     return false;
 }
 
+// calcArgWidthと一緒
 pub fn getValCounts(data: []u8, pos: usize) usize {
     var tmp = [_]u8{0} ** 4;
     for (data[pos..], 0..) |val, j| {

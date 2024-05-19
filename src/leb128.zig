@@ -1,6 +1,7 @@
+//! LEB128デコードをする
 const std = @import("std");
 
-// LEB128でエンコーディングされたバイナリをデコードし、デコードの数値を返却する
+// LEB128でデコードし、結果を返す
 pub fn decodeLEB128(data: []u8) usize {
     var num: usize = undefined;
     var decoded_number: usize = 0;
@@ -63,4 +64,10 @@ test "decoding by LEB128" {
     var target = [_]u8{ 0xea, 0x09, 0x07, 0x69 };
     const decoded_number = decodeLEB128(&target);
     try std.testing.expect(decoded_number == 1258);
+}
+test "decoding by sLEB128" {
+    // 0x07以降はデコードされない
+    var target = [_]u8{ 0x80, 0x80, 0x80, 0x80, 0x08 };
+    const decoded_number = decodeLEB128(&target);
+    try std.testing.expect(decoded_number == 2147483648);
 }

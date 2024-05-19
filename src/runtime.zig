@@ -1,7 +1,9 @@
+//! コードの実行を担う (code.zigからの移植)
 const Stack = @import("stack.zig").Stack;
 const Instr = @import("instr.zig").Instr;
 const std = @import("std");
 
+// コードの実行に関する構造体
 pub const Runtime = struct {
     const Self = @This();
 
@@ -89,6 +91,7 @@ pub const Runtime = struct {
         }
     }
 
+    // 変数定義
     fn def_const(self: *Self, comptime T: type, target: []u8, pos: usize) void {
         const num = proc: {
             switch (T) {
@@ -175,6 +178,7 @@ pub const Runtime = struct {
         self.stack.pop(void);
     }
 
+    // 命令に続く引数のバイト幅を返す
     fn calcArgsWidth(data: []u8, pos: usize, comptime byte_width: usize) usize {
         var tmp = [_]u8{0} ** byte_width;
         var width: usize = 0;

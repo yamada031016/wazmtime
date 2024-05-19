@@ -1,9 +1,11 @@
+//! Wasmファイルの読み取りをする
 const std = @import("std");
 const leb128 = @import("leb128.zig");
 const Runtime = @import("runtime.zig").Runtime;
 const c = @import("code.zig");
 const utils = @import("utils.zig");
 
+// Wasmファイルの読み取りに関する構造体
 pub const Wasm = struct {
     runtime: *Runtime,
     data: []u8,
@@ -18,6 +20,7 @@ pub const Wasm = struct {
         });
     }
 
+    // secで指定されたセクションまで読み進める
     fn proceedToSection(self: *Wasm, sec: WasmSection) void {
         self.pos = 8;
         if (sec == WasmSection.Type)
@@ -57,6 +60,7 @@ pub const Wasm = struct {
         }
     }
 
+    // コードセクションを解析する
     pub fn analyzeSection(self: *Wasm, sec: WasmSection) !void {
         self.proceedToSection(sec);
 
@@ -105,6 +109,7 @@ pub const Wasm = struct {
         }
     }
 
+    // コードを実行する
     fn execute(self: *Wasm, cnt: usize) !void {
         var code: WasmSectionSize = undefined;
         var first_pos: usize = self.pos; // code sizeの位置を指している
@@ -122,6 +127,7 @@ pub const Wasm = struct {
         }
     }
 
+    // セクションサイズなどを計算する
     fn getSize(self: *Wasm, sec: WasmSection) !WasmSectionSize {
         var section_size = WasmSectionSize{ .size = 0, .byte_width = 0 };
         if (@intFromEnum(sec) == self.data[self.pos]) {
@@ -188,6 +194,9 @@ const WasmSection = enum(u4) {
     }
 };
 
+// 以下、旧版の関数たち
+// 多くがWasm構造体に移植された
+// 念の為残しておく
 pub fn analyzeWasm(data: []u8, file_path: []const u8) !void {
     const stdout_file = std.io.getStdOut().writer();
     var bw = std.io.bufferedWriter(stdout_file);

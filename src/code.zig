@@ -1,3 +1,6 @@
+//! code実行に関するファイル
+//! 現在は使われておらず、その昨日のほとんどがRuntime構造体に移植された
+
 const wasm = @import("wasm.zig");
 const std = @import("std");
 const leb128 = @import("leb128.zig");
